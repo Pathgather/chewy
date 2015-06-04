@@ -28,9 +28,16 @@ module Chewy
     #   end
     #   UsersIndex.index_name # => 'dudes'
     #
-    def self.index_name(suggest = nil)
+    def self.index_name(suggest = nil, &block)
+      if suggest && block_given?
+        raise Chewy::Error, "Cannot define an index_name with both a static name and a block"
+      end
+
       if suggest
         @index_name = build_index_name(suggest, prefix: Chewy.configuration[:prefix])
+      elsif block_given?
+        @index_name = block
+        return # Don't invoke the name callback incidentally.
       else
         @index_name ||= begin
           build_index_name(
@@ -39,7 +46,14 @@ module Chewy
           ) if name
         end
       end
-      @index_name or raise UndefinedIndex
+
+      name = if @index_name.respond_to?(:call)
+               build_index_name(@index_name.call, prefix: Chewy.configuration[:prefix])
+             else
+               @index_name
+             end
+
+      name or raise UndefinedIndex
     end
 
     # Defines type for the index. Arguments depends on adapter used. For

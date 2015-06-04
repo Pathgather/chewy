@@ -57,14 +57,29 @@ describe Chewy::Index do
 
   describe '.index_name' do
     specify { expect { Class.new(Chewy::Index).index_name }.to raise_error Chewy::UndefinedIndex }
+    specify { expect { Class.new(Chewy::Index) { index_name(:myindex1){:myindex2} } }.to raise_error Chewy::Error }
     specify { expect(Class.new(Chewy::Index) { index_name :myindex }.index_name).to eq('myindex') }
     specify { expect(stub_const('DeveloperIndex', Class.new(Chewy::Index)).index_name).to eq('developer') }
     specify { expect(stub_const('DevelopersIndex', Class.new(Chewy::Index)).index_name).to eq('developers') }
+
+    specify do
+      s = 's'
+      index = Class.new(Chewy::Index) { index_name { s += 'a' } }
+      expect(index.index_name).to eq('sa')
+      expect(index.index_name).to eq('saa')
+    end
 
     context do
       before { allow(Chewy).to receive_messages(configuration: {prefix: 'testing'}) }
       specify { expect(DummiesIndex.index_name).to eq('testing_dummies') }
       specify { expect(stub_index(:dummies) { index_name :users }.index_name).to eq('testing_users') }
+
+      specify do
+        s = 's'
+        index = Class.new(Chewy::Index) { index_name { s += 'a' } }
+        expect(index.index_name).to eq('testing_sa')
+        expect(index.index_name).to eq('testing_saa')
+      end
     end
   end
 
