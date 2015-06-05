@@ -591,7 +591,8 @@ module Chewy
     #            query: {text: {name: 'Johny'}}
     #          }}
     #
-    def query params
+    def query params = nil, &block
+      params = Filters.new(&block).__render__ if block
       chain { criteria.update_queries params }
     end
 
