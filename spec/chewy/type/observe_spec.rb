@@ -10,34 +10,43 @@ describe Chewy::Type::Import do
 
     let(:backreferenced) { 3.times.map { |i| double(id: i) } }
 
-    specify { expect { DummiesIndex.dummy.update_index("dummies#dummy") }
-      .to update_index('dummies#dummy') }
-    specify { expect { DummiesIndex.dummy.update_index(->(dummy) {"dummies#dummy"}) }
-      .to update_index('dummies#dummy') }
-    specify { expect { DummiesIndex.dummy.update_index(backreferenced) }
+    specify { expect { DummiesIndex::Dummy.update_index(backreferenced) }
       .to raise_error Chewy::UndefinedUpdateStrategy }
-    specify { expect { DummiesIndex.dummy.update_index([]) }
+    specify { expect { DummiesIndex::Dummy.update_index([]) }
       .not_to update_index('dummies#dummy') }
-    specify { expect { DummiesIndex.dummy.update_index(nil) }
+    specify { expect { DummiesIndex::Dummy.update_index(nil) }
       .not_to update_index('dummies#dummy') }
   end
 
   context 'integration', :orm do
+    let(:update_condition) { true }
+
     before do
-      stub_model(:city) do
-        update_index('cities#city') { self }
-        update_index 'countries#country' do
-          changes['country_id'] || previous_changes['country_id'] || country
+      city_countries_update_proc = if adapter == :sequel
+          ->(*) { previous_changes.try(:[], :country_id) || country }
+        else
+          ->(*) { changes['country_id'] || previous_changes['country_id'] || country }
         end
+
+      stub_model(:city) do
+        update_index(->(city) { "cities##{city.class.name.underscore}" }) { self }
+        update_index 'countries#country', &city_countries_update_proc
       end
 
       stub_model(:country) do
-        update_index('cities#city') { cities }
-        update_index 'countries#country', :self
+        update_index('cities#city', if: -> { update_condition }) { cities }
+        update_index(->{ "countries##{self.class.name.underscore}" }, :self)
+        attr_accessor :update_condition
       end
 
-      City.belongs_to :country
-      Country.has_many :cities
+      if adapter == :sequel
+        City.many_to_one :country
+        Country.one_to_many :cities
+        City.plugin :dirty
+      else
+        City.belongs_to :country
+        Country.has_many :cities
+      end
 
       stub_index(:cities) do
         define_type City
@@ -49,8 +58,8 @@ describe Chewy::Type::Import do
     end
 
     context do
-      let!(:country1) { Chewy.strategy(:atomic) { Country.create!(id: 1) } }
-      let!(:country2) { Chewy.strategy(:atomic) { Country.create!(id: 2) } }
+      let!(:country1) { Chewy.strategy(:atomic) { Country.create!(id: 1, update_condition: update_condition) } }
+      let!(:country2) { Chewy.strategy(:atomic) { Country.create!(id: 2, update_condition: update_condition) } }
       let!(:city) { Chewy.strategy(:atomic) { City.create!(id: 1, country: country1) } }
 
       specify { expect { city.save! }.to update_index('cities#city').and_reindex(city) }
@@ -64,10 +73,26 @@ describe Chewy::Type::Import do
     end
 
     context do
-      let!(:country) { Chewy.strategy(:atomic) { Country.create!(id: 1, cities: 2.times.map { |i| City.create!(id: i) }) } }
+      let!(:country) do
+        Chewy.strategy(:atomic) do
+          cities = 2.times.map { |i| City.create!(id: i) }
+          if adapter == :sequel
+            Country.create(id: 1, update_condition: update_condition).tap do |country|
+              cities.each { |city| country.add_city(city) }
+            end
+          else
+            Country.create!(id: 1, cities: cities, update_condition: update_condition)
+          end
+        end
+      end
 
       specify { expect { country.save! }.to update_index('cities#city').and_reindex(country.cities) }
       specify { expect { country.save! }.to update_index('countries#country').and_reindex(country) }
+
+      context 'conditional update' do
+        let(:update_condition) { false }
+        specify { expect { country.save! }.not_to update_index('cities#city') }
+      end
     end
   end
 

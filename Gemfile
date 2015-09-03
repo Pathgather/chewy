@@ -4,9 +4,10 @@ gemspec
 
 gem 'activerecord'
 # gem 'mongoid'
+# gem 'sequel'
 
 # gem 'kaminari', require: false
-# gem 'will_pagnate', require: false
+# gem 'will_paginate', require: false
 
 gem 'resque', require: false
 gem 'sidekiq', require: false

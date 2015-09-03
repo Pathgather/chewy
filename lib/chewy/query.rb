@@ -386,7 +386,7 @@ module Chewy
     # added to the search request and combinded according to
     # <tt>boost_mode</tt> and <tt>score_mode</tt>
     #
-    # This probably only makes sense if you specifiy a filter
+    # This probably only makes sense if you specify a filter
     # for the boost factor as well
     #
     #   UsersIndex.boost_factor(23, filter: { term: { foo: :bar} })
@@ -408,7 +408,7 @@ module Chewy
     # added to the search request and combinded according to
     # <tt>boost_mode</tt> and <tt>score_mode</tt>
     #
-    # This probably only makes sense if you specifiy a filter
+    # This probably only makes sense if you specify a filter
     # for the random score as well.
     #
     # If you do not pass in a seed value, Time.now will be used
@@ -876,7 +876,7 @@ module Chewy
       end
     end
 
-    # Deletes all records matching a query.
+    # Find all records matching a query.
     #
     #   UsersIndex.find(42)
     #   UsersIndex.filter{ age <= 42 }.find(42)
@@ -982,7 +982,7 @@ module Chewy
 
     def _derive_index index_name
       (@derive_index ||= {})[index_name] ||= _indexes_hash[index_name] ||
-        _indexes_hash[_indexes_hash.keys.sort_by(&:length).reverse.detect { |name| index_name.starts_with?(name) }]
+        _indexes_hash[_indexes_hash.keys.sort_by(&:length).reverse.detect { |name| index_name.start_with?(name) }]
     end
 
     def _indexes_hash

@@ -8,6 +8,7 @@ require 'chewy/type/import'
 require 'chewy/type/adapter/object'
 require 'chewy/type/adapter/active_record'
 require 'chewy/type/adapter/mongoid'
+require 'chewy/type/adapter/sequel'
 
 module Chewy
   class Type
@@ -21,7 +22,7 @@ module Chewy
 
     singleton_class.delegate :index_name, :client, to: :index
 
-    # Chewy index current type blongs to. Defined inside `Chewy.create_type`
+    # Chewy index current type belongs to. Defined inside `Chewy.create_type`
     #
     def self.index
       raise NotImplementedError

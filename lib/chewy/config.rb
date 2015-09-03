@@ -19,8 +19,8 @@ module Chewy
       #
       :post_filter_mode,
 
-      # The first trategy in stack. `:base` by default.
-      # If you neet to return to the previous chewy behavior -
+      # The first strategy in stack. `:base` by default.
+      # If you need to return to the previous chewy behavior -
       # just set it to `:bypass`
       #
       :root_strategy,
@@ -106,8 +106,8 @@ module Chewy
     #
     def configuration
       yaml_settings.merge(settings.deep_symbolize_keys).tap do |configuration|
-        configuration.merge(logger: transport_logger) if transport_logger
-        configuration.merge(tracer: transport_tracer) if transport_tracer
+        configuration.merge!(logger: transport_logger) if transport_logger
+        configuration.merge!(tracer: transport_tracer) if transport_tracer
       end
     end
 
