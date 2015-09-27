@@ -22,12 +22,12 @@ module Sequel
     module ChewyObserve
       extend ::Chewy::Type::Observe::Helpers
 
-      def self.apply(model)
-        model.instance_eval do
-          include ActiveSupport::Callbacks
-          define_callbacks :commit, :save, :destroy
-        end
-      end
+      # def self.apply(model)
+      #   model.instance_eval do
+      #     include ActiveSupport::Callbacks
+      #     define_callbacks :commit, :save, :destroy
+      #   end
+      # end
 
       # Class level methods for Sequel::Model
       #
@@ -35,37 +35,31 @@ module Sequel
         def update_index(type_name, *args, &block)
           callback_options = ChewyObserve.extract_callback_options!(args)
           update_proc = ChewyObserve.update_proc(type_name, *args, &block)
-
-          if Chewy.use_after_commit_callbacks
-            set_callback(:commit, callback_options, &update_proc)
-          else
-            set_callback(:save, callback_options, &update_proc)
-            set_callback(:destroy, callback_options, &update_proc)
-          end
+          after_commit(&update_proc)
         end
       end
 
       # Instance level methods for Sequel::Model
       #
-      module InstanceMethods
-        def after_commit
-          run_callbacks(:commit) do
-            super
-          end
-        end
+      # module InstanceMethods
+      #   def after_commit
+      #     run_callbacks(:commit) do
+      #       super
+      #     end
+      #   end
 
-        def after_save
-          run_callbacks(:save) do
-            super
-          end
-        end
+      #   def after_save
+      #     run_callbacks(:save) do
+      #       super
+      #     end
+      #   end
 
-        def after_destroy
-          run_callbacks(:destroy) do
-            super
-          end
-        end
-      end
+      #   def after_destroy
+      #     run_callbacks(:destroy) do
+      #       super
+      #     end
+      #   end
+      # end
     end
   end
 end
