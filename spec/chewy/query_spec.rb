@@ -61,6 +61,34 @@ describe Chewy::Query do
     specify { expect { subject.query_mode(:should) }.not_to change { subject.criteria.options } }
   end
 
+  describe '#bool_should' do
+    specify {
+      ds = subject.query(term: {field1: 'value1'}).query(term: {field2: 'value2'}).query_mode(:dis_max)
+      ds = ds.bool_should(term: {field3: 'value3'})
+      expect(ds.criteria.request_body).to eq(
+        {
+          :body=>{
+            :query=>{
+              :bool=>{
+                :must=>{
+                  :dis_max=>{
+                    :queries=>[
+                      {:term=>{:field1=>"value1"}},
+                      {:term=>{:field2=>"value2"}}
+                    ]
+                  }
+                },
+                :should=>[
+                  {:term=>{:field3=>"value3"}}
+                ]
+              }
+            }
+          }
+        }
+      )
+    }
+  end
+
   describe '#filter_mode' do
     specify { expect(subject.filter_mode(:or)).to be_a described_class }
     specify { expect(subject.filter_mode(:or)).not_to eq(subject) }
