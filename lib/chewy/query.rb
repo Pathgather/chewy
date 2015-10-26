@@ -157,6 +157,10 @@ module Chewy
       chain { criteria.update_options query_mode: value }
     end
 
+    def bool_should(params)
+      chain { criteria.update_bool_shoulds(params) }
+    end
+
     # Sets query compilation mode for search request.
     # Not used if only one filter for search is specified.
     # Possible values:

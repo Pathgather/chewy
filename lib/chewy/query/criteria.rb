@@ -4,7 +4,7 @@ module Chewy
   class Query
     class Criteria
       include Compose
-      ARRAY_STORAGES = [:queries, :filters, :post_filters, :sort, :fields, :types, :scores]
+      ARRAY_STORAGES = [:queries, :filters, :post_filters, :sort, :fields, :types, :scores, :bool_shoulds]
       HASH_STORAGES = [:options, :request_options, :facets, :aggregations, :suggest, :script_fields]
       STORAGES = ARRAY_STORAGES + HASH_STORAGES
 
@@ -68,7 +68,7 @@ module Chewy
         script_fields.merge!(modifier)
       end
 
-      [:filters, :queries, :post_filters].each do |storage|
+      [:filters, :queries, :post_filters, :bool_shoulds].each do |storage|
         class_eval <<-RUBY
           def update_#{storage}(modifier)
             @#{storage} = #{storage} + Array.wrap(modifier).reject(&:blank?)
@@ -155,7 +155,18 @@ module Chewy
       end
 
       def _request_query
-        _queries_join(queries, options[:query_mode])
+        base = _queries_join(queries, options[:query_mode])
+
+        if bool_shoulds && bool_shoulds.any?
+          {
+            bool: {
+              must: base,
+              should: bool_shoulds
+            }
+          }
+        else
+          base
+        end
       end
 
       def _request_filter
