@@ -97,7 +97,8 @@ module Chewy
 
           if self.root_object.parent_id
             existing_object = entry[:_id].present? && indexed_objects && indexed_objects[entry[:_id].to_s]
-            entry.merge!(parent: existing_object[:parent]) if existing_object
+            return [] unless existing_object
+            entry.merge!(parent: existing_object[:parent])
           end
 
           [{ delete: entry }]
